@@ -22,16 +22,24 @@ jobs:
           username: ${{ vars.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PAT }}
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker Buildx for Cloud Builder
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: cloud
+          # 请确认此端点名称是否正确，通常在 Build Cloud 控制台可以找到
+          endpoint: whatsuperhere/my-custom-ffmpeg
+          install: true
 
-      - name: Build and push using Cloud Builder
-        run: |
-          docker buildx build \
-            --builder cloud-whatsuperhere-my-custom-ffmpeg \
-            --platform linux/amd64 \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            --push .
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          platforms: linux/amd64
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Notify success
-        run: 'echo "✅ 构建完成！镜像已推送到 Docker Hub: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"'
+        if: success()
+        run: echo "✅ 构建完成！镜像已推送到 Docker Hub: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
