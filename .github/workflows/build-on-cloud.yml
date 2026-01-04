@@ -1,21 +1,31 @@
 name: Build on Docker Build Cloud
+
 on:
   push:
-    branches: [ main ] # 推送到main分支时触发
-  # 你也可以启用tag触发，方便版本管理
-  # push:
-  #   tags:
-  #     - 'v*'
+    branches: [ main ]
+    # 取消注释下面部分以支持tag触发
+    # tags:
+    #   - 'v*'
+  # 也可以手动触发
+  workflow_dispatch:
+
+env:
+  # 设置镜像名称变量，方便统一管理
+  REGISTRY: docker.io
+  IMAGE_NAME: whatsuperhere/my-custom-ffmpeg
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx (for CLI)
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          # 这里不需要创建新的构建器，只需安装CLI
+          install: true
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -23,10 +33,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push using Build Cloud
+      - name: Build and push
         run: |
+          # 关键：使用你在Docker Build Cloud创建的构建器
+          # 注意：构建器名称必须是你在docker buildx ls中看到的那个
           docker buildx build \
             --builder cloud-whatsuperhere-my-custom-ffmpeg \
             --platform linux/amd64 \
-            -t whatsuperhere/my-custom-ffmpeg:latest \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::8} \
             --push .
+          
+          echo "✅ 构建完成！镜像已推送到Docker Hub"
