@@ -41,5 +41,4 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Notify success
-        if: success()
-        run: echo "✅ 构建完成！镜像已推送到 Docker Hub: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+        run: 'echo "✅ 构建完成！镜像已推送到 Docker Hub: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"'
